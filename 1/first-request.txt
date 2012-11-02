@@ -1,0 +1,23 @@
+No.     Time           Source                Destination           Protocol Length Info
+     86 0.000000000    145.18.214.201        216.92.29.160         HTTP     485    GET /bash/ping.html HTTP/1.1 
+
+Frame 86: 485 bytes on wire (3880 bits), 485 bytes captured (3880 bits)
+Ethernet II, Src: Apple_11:f3:14 (e4:ce:8f:11:f3:14), Dst: Cisco_45:2c:00 (00:0a:42:45:2c:00)
+Internet Protocol Version 4, Src: 145.18.214.201 (145.18.214.201), Dst: 216.92.29.160 (216.92.29.160)
+Transmission Control Protocol, Src Port: 50839 (50839), Dst Port: http (80), Seq: 1, Ack: 1, Len: 419
+Hypertext Transfer Protocol
+    GET /bash/ping.html HTTP/1.1\r\n
+        [Expert Info (Chat/Sequence): GET /bash/ping.html HTTP/1.1\r\n]
+        Request Method: GET
+        Request URI: /bash/ping.html
+        Request Version: HTTP/1.1
+    Host: ss64.com\r\n
+    Connection: keep-alive\r\n
+    Cache-Control: max-age=0\r\n
+    User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.94 Safari/537.4\r\n
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n
+    Accept-Encoding: gzip,deflate,sdch\r\n
+    Accept-Language: en-US,en;q=0.8\r\n
+    Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.3\r\n
+    \r\n
+    [Full request URI: http://ss64.com/bash/ping.html]
