@@ -1,0 +1,100 @@
+\title{Networking and System Security \\ Assignment 6}
+\author{David van Erkelens (10264019) \\ Department of Computer Science \\ University of Amsterdam}
+\date{\today}
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{color}
+\begin{document}
+\maketitle
+\section{Introduction}
+Before getting started with answering the questions, I want to make clear
+that I deliberately chose to note my findings in LaTeX, simply because
+I hate working with Microsoft Word, and I don't want to be forced into working
+with this program as a computer scientist.
+\section{Task 1}
+\emph{TCP Handshake and Statistics}
+\begin{enumerate}
+    \item
+    \begin{enumerate}
+        \item {\bf Client IP:} 145.18.214.201
+        \item {\bf Server IP:} 195.169.124.10
+        \item {\bf Source Port:} 56653
+        \item {\bf Destination Port:} 80 (HTTP port)
+    \end{enumerate}
+    \item
+    \begin{enumerate}
+        \item {\bf TCP segments:} 29
+        \item {\bf Sent bytes:} 42334
+        \item {\bf Received segments:} 29
+        \item {\bf Received bytes:} 3890
+    \end{enumerate}
+    \clearpage
+    \item
+    \begin{enumerate}
+        \item 0
+        \item The 0x002 tag in the flag.
+    \end{enumerate}
+    \item
+    \begin{enumerate}
+        \item 0
+        \item 1
+        \item It is the first ACK.
+        \item The 0x012 tag in the flag.
+    \end{enumerate}
+\end{enumerate}
+\section{Task 2}
+\emph{TCP Sequence Numbers}
+\begin{enumerate}
+    \setcounter{enumi}{4}
+    \item
+    \begin{enumerate}
+        \begin{enumerate}
+        \item
+        \begin{tabular}{| l | l | l |}
+            \hline
+            & {\bf Sequence number} & {\bf TCP Segment Data} \\
+            \hline
+            Segment 1 & 1 & 1351 \\
+            \hline
+            Segment 2 & 1352 & 1351 \\
+            \hline
+            Segment 3 & 2703 & 1351 \\
+            \hline
+            Segment 4 & 4054 & 1351 \\
+            \hline
+            Segment 5 & 5405 & 1351 \\
+            \hline
+        \end{tabular}
+        \item By addding the segment size to the last sequence number.
+    \end{enumerate}
+    \end{enumerate}
+    \item
+        \begin{enumerate}
+            \item No
+            \item By using the \verb|tcp.analysis.retransmission| filter
+        \end{enumerate}
+        \item I'd love to export the graph, but since I use a netbook,
+            I can't make a screenshot (the window is to big to fit on the
+            screen) and Wireshark seems to lack an exporting option. However,
+            the graph is consistent with my previous findings.
+\end{enumerate}
+\section{Task 3}
+\emph{TCP RTT}
+\begin{enumerate}
+    \setcounter{enumi}{7}
+    \item
+    \begin{tabular}{| l | l | l | l |}
+        \hline
+        & {\bf Sent time} & {\bf ACK received time} & {\bf Sample RTT}
+        \hline
+        Segment 1 & & & \\
+        \hline
+        Segment 2 & & & \\
+        \hline
+        Segment 3 & & & \\
+        \hline
+        Segment 4 & & & \\
+        \hline
+    \end{tabular}
+\end{enumerate}
+\end {document}
