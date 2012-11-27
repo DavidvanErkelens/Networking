@@ -1,0 +1,202 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{tikz}
+\begin{document}
+\begin{titlepage}
+\begin{center}
+    \includegraphics[width=\textwidth]{./logo.png}
+    \\ [2.5cm]
+    \textsc{\Large Networking and System Security}
+    \\ [0.5cm]
+    \textsc{\large Lab Exercise 7}
+    \\ [1cm]
+    \hrule
+    \vspace{0.3cm}
+    \textsc{IP Addressing and BGP Routing}
+    \\ [0.3cm]
+    \hrule
+    \vfill
+    \textsc{David van Erkelens, 10264019 \\[0.3cm] Department of Computer Science \\ University of Amsterdam \\[0.3cm] \today}
+\end{center}
+\end{titlepage}
+\tableofcontents
+\clearpage
+\section{Introduction}
+In this document, I'll note my findings regarding lab exercise 7
+of the Networking and System Security course. This document will also
+be a playground for testing my LaTeX skills, hence the fancy layout of
+this document. I hope you'll enjoy the formatting of this document and,
+after all, the answers to the questions!
+\section{Task 1}
+\emph{\large IPv4 addressing} \\[0.3cm]
+Using IPv4 address space \verb|5.22.0.0/15|
+\begin{enumerate}
+    \item \begin{enumerate}
+            \item There are $2^{23-15} = 256$ subnets
+            \item Each subnet has $2^{32-23} = 512$ IP addresses
+            \item Since the network and broadcast IP addresses are
+                reserved, each subnet can handle 510 hosts.
+    \end{enumerate}
+    \item \begin{enumerate}
+        \item The IPv4 address space \verb|5.22.0.0/15| with a subnet space
+            of \verb|/23| gives us the following translation into bits:
+            \begin{verbatim}00000101 0001011X XXXXXXXY YYYYYYYY\end{verbatim}
+            In which each X stands for a bit of the subnet-part of the
+            address, and each Y stands for a bit in the host address part.
+            \\ \\
+            Adding the zeros for the subnet part (the first subnet has
+            number 0), gives us the following result:
+            \begin{verbatim}00000101 00010110 0000000Y YYYYYYYY\end{verbatim}
+            The network IP address is the address in which each Y is a
+            zero, giving us the following IP address in bits:
+            \begin{verbatim}00000101 00010110 00000000 00000000\end{verbatim}
+            \clearpage
+            This translates into the following decimal IP address:
+            \begin{verbatim}5.22.0.0\end{verbatim}
+        \item The broadcast IP address of a subnet is the address in which
+            each Y from the explanation at (a) is an one instead of a zero.
+            This gives us the following IP address in bits:
+            \begin{verbatim}00000101 00010110 00000001 11111111\end{verbatim}
+            This translates into the following decimal IP address:
+            \begin{verbatim}5.22.1.255\end{verbatim}
+    \end{enumerate}
+    \item \begin{enumerate}
+        \item The binary value of 129 (we start counting at 0, so we need 129
+            to calculate the IP address of the 130$^{th}$ subnet) is
+            \begin{verbatim}10000001\end{verbatim}
+            Putting this at the place of the X's of the IP address which
+            we saw in (2a), gives us the following subnet space:
+            \begin{verbatim}00000101 00010111 0000001Y YYYYYYYY\end{verbatim}
+            Again, we'll replace every Y with a zero to find the network
+            IP address of the 130$^{th}$ subnet:
+            \begin{verbatim}00000101 00010111 00000010 00000000\end{verbatim}
+            Giving us a decimal IP address:
+            \begin{verbatim}5.23.2.0\end{verbatim}
+        \item Again, we'll replace every Y from (a) with an one to find
+            the broadcast IP address of the 130$^{th}$ subnet:
+            \begin{verbatim}00000101 00010111 00000011 11111111\end{verbatim}
+            Giving us a decimal IP address:
+            \begin{verbatim}5.23.3.255\end{verbatim}
+    \end{enumerate}
+\end{enumerate}
+\clearpage
+\section{Task 2}
+\emph{\large IPv6 addressing} \\[0.3cm]
+Using IPv6 address space \verb|2001:0db8:ff00:1100::/58|
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item \begin{enumerate}
+        \item The total address range starts at
+            \begin{verbatim}2001:0db8:ff00:1100::\end{verbatim}
+            And it ends at
+            \begin{verbatim}2001:0db8:ff00:113f:ffff:ffff:ffff:ffff\end{verbatim}
+        \item There are $2^{64-58} = 64$ \verb|/64| subnets
+        \item Each subnet has $2^{128-64} = 2^{64}$ addresses.
+    \end{enumerate}
+    \item The address range starts at
+        \begin{verbatim}2001:0db8:ff00:1100::\end{verbatim}
+        Considering the \verb|/58| range, numbering subnets starts at the
+        \verb|1100|, the 4$^{th}$ hexadecimal number group. However, 58 is
+        not dividable by 4 so creating the IP address of a subnet has to be
+        done on a binary level instead of a hexadecimal level. Transforming
+        the \verb|1100| into binary gives us:
+        \begin{verbatim}0001 0001 0000 0000\end{verbatim}
+        This is the part from the 49$^{th}$ to the 64$^{th}$ bit of the IP
+        address. Keeping the \verb|/58| into mind, we can start numbering
+        our subnets from the 59$^{th}$ to the 64$^{th}$ bit of the IP address.
+        So all the subnet numbering happens within the 4$^{th}$ hexadecimal
+        number group. Marking the space for subnet numbering, gives us the
+        following binary view of this number group:
+        \begin{verbatim}0001 0001 00XX XXXX\end{verbatim}
+        \clearpage
+        The binary notation of 1 is \verb|00 0001|. When we add this value
+        to the number group above, the number group will look like this:
+        \begin{verbatim}0001 0001 0000 0001\end{verbatim}
+        Which translates back to a hexadecimal value of \verb|1101|. Putting
+        this back into the original IPv6 address, gives us the IP address of
+        the 2$^{nd}$ \verb|/64| subnet:
+        \begin{verbatim}2001:0db8:ff00:1101::\end{verbatim}
+    \item With all the work done at (5), the only thing left to do to calculate
+        the IP address of the 42$^{th}$ is calculating the binary value of 41,
+        which is
+        \begin{verbatim}10 1001\end{verbatim}
+        Adding this to the binary view of the 4$^{th}$ number group gives:
+        \begin{verbatim}0001 0001 0010 1001\end{verbatim}
+        Which translates back to a hexadecimal value of \verb|1129|. Adding
+        this to the original IP address gives us the IP address of the 42$^{th}$
+        \verb|/64| subnet:
+        \begin{verbatim}2001:0db8:ff00:1129::\end{verbatim}
+\end{enumerate}
+\clearpage
+\section{Task 3}
+\emph{\large Find the path} \\[0.3cm]
+\begin{enumerate}
+    \setcounter{enumi}{6}
+\item LG Server BGP paths: \\[0.4cm]
+        \begin{tikzpicture}
+            [scale=1.3, auto=left]
+            \node (jp) at (1,10) {Japan};
+            \node (nl) at (3,10) {Netherlands};
+            \node (fr) at (5,10) {France};
+            \node (lx) at (7,10) {Luxemburg};
+            \node (us) at (9,10) {USA};
+            \node (jp1) at (1,9) {9370};
+            \node (jp2) at (1,7) {2914};
+            \node (jp3) at (1,5) {3257};
+            \node (nl1) at (3,9) {1136};
+            \node (nl2) at (3,7) {286};
+            \node (fr1) at (5,9) {8426};
+            \node (fr2) at (5,7) {2603};
+            \node (lx1) at (7,9) {5577};
+            \node (lx2) at (7,7) {46786};
+            \node (us1) at (9,9) {2828};
+            \node (us2) at (9,7) {6453};
+            \node (s1) at (5,3) {1103};
+            \node (s2) at (5,1) {1124};
+            \foreach \from/\to in {jp1/jp2, jp2/jp3, jp3/s1, s1/s2, nl1/nl2, nl2/s1, fr1/fr2, fr2/s1, lx1/lx2, lx2/fr2, us1/us2, us2/s1}
+                \draw (\from) -- (\to);
+        \end{tikzpicture}
+        \clearpage
+        {\bf Used LG servers:} \\
+        Sakura Japan (9370) \\ \verb|    http://as9370.bgp4.jp/| \\
+        KPN Netherlands (1136) \\ \verb|    http://netcollect.kpn.net/looking-glass/| \\
+        Claranet France (8426) \\ \verb|    http://noc.eu.clara.net/lg.php| \\
+        Root SA Luxemburg (5577) \\ \verb|    http://lg.as5577.net/| \\
+        XO Washington DC (2828) \\ \verb|    http://xostats.xo.com/cgi-bin/xostats/diagtool-pub| \\
+    \item AS name overview: \\[0.3cm]
+        \begin{tabular}{| c || c | l | p{6cm} |}
+            \hline
+            \cellcolor{gray!40} & \cellcolor{gray!40} AS Number & \cellcolor{gray!40} Country & \cellcolor{gray!40} AS Name \\
+            \hline
+            1 & 9370 & Japan & SAKURA-B SAKURA Internet Inc. \\
+            \hline
+            2 & 2914 &United States &NTT-COMMUNICATIONS-2914 - \newline
+            NTT America, Inc. \\
+            \hline
+            3 & 3257 &Germany &TINET-BACKBONE Tinet SpA \\
+            \hline
+            4 & 1136 & Netherlands &KPN KPN Internet Solutions \\
+            \hline
+            5 & 286 & Europe & KPN KPN Internet Backbone \\
+            \hline
+            6 & 8426 & Great Britain & CLARANET-AS ClaraNET LTD \\
+            \hline
+            7 & 2603 & Norway & CLARANET-AS ClaraNET LTD \\
+            \hline
+            8 & 5577 & Luxemburg & ROOT root SA \\
+            \hline
+            9 & 46786 & United States & IPTRANSIT - IP Transit Inc. \\
+            \hline
+            10 & 2828 & United States & XO-AS15 - XO Communications \\
+            \hline
+            11 & 6453 & Canada & GLOBEINTERNET TATA Communications \\
+            \hline
+            12 & 1103 & Netherlands & SURFNET-NL SURFnet, The Netherlands \\
+            \hline
+            13 & 1124 & Netherlands &UVA-NL Universiteit van Amsterdam \\
+            \hline
+        \end{tabular}
+\end{enumerate}
+\end {document}
