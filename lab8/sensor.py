@@ -21,7 +21,7 @@ MCAST_GRP  = '224.1.1.1'
 MCAST_PORT = 50000
 
 ## Period in seconds when to send ping.
-PING_PERIOD = 15.0
+PING_PERIOD = 5.0
 
 ## The grid size and sensor range.
 GRID_SIZE    = 100
