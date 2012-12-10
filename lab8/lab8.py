@@ -2,9 +2,8 @@
 # Lab 8 - Distributed Sensor Network
 # Author(s) and student ID(s):
 # David van Erkelens and Jelte Fennema
-# 10264019 and
-# Group:
-# Date: 7 december 2012
+# Group: 5
+# Date: 10 december 2012
 import sys
 import struct
 import time
@@ -67,6 +66,10 @@ def main(argv):
     father = []
     global receivedEchoReps
     receivedEchoReps = []
+    global recPayload
+    recPayload = []
+    global types
+    types = []
     waves = 0
     window.writeln("Position: " + str(x) + ":" + str(y))
     enc_msg = message_encode(MSG_PING, 0, (x, y), (0, 0))
@@ -121,6 +124,22 @@ def main(argv):
                     waves += 1
                     receivedEchoReps.append(0)
                     father.append('dummy')
+                    types.append(OP_NOOP)
+                    recPayload.append(0)
+            elif(line == "size"):
+                if(nodes == []):
+                    window.writeln("No neighbors, size will be aborted.")
+                else:
+                    knownWaves.append((waves, (x, y)))
+                    window.writeln("Added " + str((waves, (x, y))) + " to list of known waves")
+                    for n in nodes:
+                        echo = message_encode(MSG_ECHO, waves, (x, y), (x, y), OP_SIZE)
+                        peer.sendto(echo, n[0])
+                    waves += 1
+                    receivedEchoReps.append(0)
+                    father.append('dummy')
+                    recPayload.append(0)
+                    types.append(OP_SIZE)
             else:
                 window.writeln("This command is not supported")
 
@@ -138,6 +157,7 @@ def process_msg(message, address, mcastt, ucast):
     global nodes
     global knownWaves
     global father
+    global recPayload
     global receivedEchoReps
     dec_msg = message_decode(message)
     global window
@@ -153,62 +173,63 @@ def process_msg(message, address, mcastt, ucast):
             if math.sqrt(dx + dy) <= SENSOR_RANGE:
                 enc_msg = message_encode(MSG_PONG, 0, (dec_x, dec_y), (x, y))
                 peer.sendto(enc_msg, address)
-    elif(dec_msg[0] == MSG_PONG):
-        #window.writeln("Adding "+str(dec_msg[3]) + " to list of neighbours")
-        nodes.append((address, dec_msg[3]))
-    elif(dec_msg[0] == MSG_ECHO):
 
-        window.writeln("Received echo")
+    elif(dec_msg[0] == MSG_PONG):
+        nodes.append((address, dec_msg[3]))
+
+    elif(dec_msg[0] == MSG_ECHO):
         if(dec_msg[1], dec_msg[2]) in knownWaves:
-            window.writeln("Echo from already known wave")
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
             rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
             peer.sendto(rep, address)
         else:
-            window.writeln("Echo from not yet know wave")
             knownWaves.append((dec_msg[1], dec_msg[2]))
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
             father.append(address)
-            window.writeln("Length: " + str(len(nodes)))
+            recPayload.append(0)
+            types.append(dec_msg[4])
             if(len(nodes) == 1):
-                window.writeln("Echo'ing to father, only one neighbor")
-                rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
-                peer.sendto(rep, address)
+                if(dec_msg[4] == OP_SIZE):
+                    rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y), OP_SIZE, 1)
+                else:
+                    rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
+                peer.sendto(rep,  address)
             else:
-                window.writeln("Echo to childs")
                 for n in nodes:
-                    window.writeln(str(n[0]))
-                    window.writeln(str(father[index]))
-                    window.writeln("Selecting node...")
                     if(n[0] == father[index]):
-                        window.writeln("Skipping, father")
-                        #pass
+                        pass
                     else:
-                        window.writeln("Sending echo to child")
-                        echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y))
+                        if(dec_msg [4] == OP_SIZE):
+                            echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y), OP_SIZE, 0)
+                        else:
+                            echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y))
                         peer.sendto(echo, n[0])
                 receivedEchoReps.append(0)
 
     elif(dec_msg[0] == MSG_ECHO_REPLY):
-        window.writeln("Testing for " + str((dec_msg[1], dec_msg[2])))
         if not ((dec_msg[1], dec_msg[2])) in knownWaves:
             window.writeln("Something went wrong")
         else:
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
-            window.writeln("Received echo reply")
-            window.writeln(str(index) + " " + str(len(receivedEchoReps)))
-            window.writeln("Received echo reps: " + str(receivedEchoReps[index]))
             receivedEchoReps[index] += 1
+            if(not (types[index] == dec_msg[4])):
+                pass
+            elif(dec_msg[4] == OP_SIZE):
+                recPayload[index] += int(dec_msg[5])
             if(receivedEchoReps[index] == len(nodes) - 1):
-
                 if(knownWaves[index][1] == (x, y)):
-                    # initiator
                     pass
                 else:
-                    msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
+                    if(types[index] == OP_SIZE):
+                        msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], \
+                                (x, y), OP_SIZE, recPayload[index] + 1)
+                    else:
+                        msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
                     peer.sendto(msg, father[index])
             elif(receivedEchoReps[index] == len(nodes) and knownWaves[index][1] == (x, y)):
                 window.writeln("Echo finished.")
+                if(dec_msg[4] == OP_SIZE):
+                   window.writeln("Total size of the network: " + str(recPayload[index] + 1))
 
 
 
