@@ -30,6 +30,8 @@ def main(argv):
     Program entry point.
     """
     ## Create the multicast listener socket and suscribe to multicast.
+    global mcast
+    global peer
     mcast = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     socket_subscribe_mcast(mcast, MCAST_GRP)
     # Set socket as reusable.
@@ -42,35 +44,40 @@ def main(argv):
     # When you hand in your code in it must listen on (MCAST_GRP, MCAST_PORT).
     mcast.bind((MCAST_GRP, MCAST_PORT))
     mcast.setblocking(0)
-
     ## Create the peer-to-peer socket.
     peer = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     # Set the socket multicast TTL so it can send multicast messages.
     peer.setsockopt(IPPROTO_IP, IP_MULTICAST_TTL, 2)
     # Bind the socket to a random port.
     peer.bind(('', INADDR_ANY))
+    peer.setblocking(0)
     ## This is the event loop.
     global window
     window = MainWindow()
     start = time.time()
-    window.writeln("Starting at " + str(start))
     global x
     x = random.randrange(0, GRID_SIZE)
     global y
     y = random.randrange(0, GRID_SIZE)
+    global nodes
+    nodes = []
     window.writeln("Position: " + str(x) + ":" + str(y))
     enc_msg = message_encode(MSG_PING, 0, (x, y), (0, 0))
-    send_ping(mcast, enc_msg)
-    window.writeln("Sending ping message...")
+    peer.sendto(enc_msg, (MCAST_GRP, MCAST_PORT))
     while window.update():
         if(time.time() - start > PING_PERIOD):
-            window.writeln("New ping! Time: " + str(time.time()))
             start = time.time()
             enc_msg = message_encode(MSG_PING, 0, (x, y), (0, 0))
-            send_ping(mcast, enc_msg)
+            peer.sendto(enc_msg, (MCAST_GRP, MCAST_PORT))
+            nodes = []
         try:
             message, address = mcast.recvfrom(2048)
-            process_msg(message, address, mcast, peer)
+            process_msg(message, address, peer, mcast)
+        except:
+            pass
+        try:
+            message, address = peer.recvfrom(2048)
+            process_msg(message, address, peer, mcast)
         except:
             pass
         try:
@@ -78,35 +85,55 @@ def main(argv):
         except:
             pass
         if(line):
-            window.writeln(line)
+            if(line == "ping"):
+                window.writeln("We'll be pinging now.")
+                nodes = []
+                start = time.time()
+                enc_msg = message_encode(MSG_PING, 0, (x, y), (0, 0))
+                peer.sendto(enc_msg, (MCAST_GRP, MCAST_PORT))
+            elif(line == "list"):
+                window.writeln("List of neighbors:")
+                if(nodes == []):
+                    window.writeln("No neighbors found.")
+                else:
+                    for n in nodes:
+                        window.writeln(str(n[1]) + " @ " + str(n[0]))
+            elif(line == "move"):
+                x = random.randrange(0, GRID_SIZE)
+                y = random.randrange(0, GRID_SIZE)
+                window.writeln("New location of sensor: " + str(x) + ":" + str(y))
+            else:
+                window.writeln("This command is not supported")
 
-def send_ping(socket, message):
+def send_mcast(socket, message):
     socket.sendto(message, (MCAST_GRP, MCAST_PORT))
 
-def send_pong(socket, message):
-    socket.sendto(message, )
+def send_ucast(socket, message, address):
+    socket.sendto(message, address)
 
-def process_msg(message, address, mcast, ucast):
+def process_msg(message, address, mcastt, ucast):
     global x
     global y
+    global peer
+    global mcast
     dec_msg = message_decode(message)
     global window
-    if dec_msg[0] == MSG_PING:
+    if(dec_msg[0] == MSG_PING):
         dec_x, dec_y = dec_msg[2]
         if dec_x == x and dec_y == y:
-            window.writeln("received own ping")
             pass
         else:
-            window.writeln("received other ping")
             dx = abs(dec_x - x)
             dx *= dx
             dy = abs(dec_y - y)
             dy *= dy
-            if math.sqrt(dx + dy) > 50.0:
-                window.writeln("in range, send pong")
-                print "Send pong!"
-            else:
-                window.writeln("out of range, do nothing")
+            if math.sqrt(dx + dy) <= SENSOR_RANGE:
+                enc_msg = message_encode(MSG_PONG, 0, (dec_x, dec_y), (x, y))
+                peer.sendto(enc_msg, address)
+    elif(dec_msg[0] == MSG_PONG):
+        #window.writeln("Adding "+str(dec_msg[3]) + " to list of neighbours")
+        global nodes
+        nodes.append((address, dec_msg[3]))
 
 
 if __name__ == '__main__':
