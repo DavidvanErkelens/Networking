@@ -58,6 +58,8 @@ def main(argv):
     x = random.randrange(0, GRID_SIZE)
     global y
     y = random.randrange(0, GRID_SIZE)
+    global value
+    value = random.randrange(0, 10000)
     global nodes
     nodes = []
     global knownWaves
@@ -71,7 +73,14 @@ def main(argv):
     global types
     types = []
     waves = 0
+    getip = socket(AF_INET, SOCK_DGRAM)
+    getip.connect(("www.davidvanerkelens.nl", 80))
+    ip = getip.getsockname()[0]
+    port = getip.getsockname()[1]
+    getip.close()
     window.writeln("Position: " + str(x) + ":" + str(y))
+    window.writeln("Sensor value: " + str(value))
+    window.writeln("Location: " + str(ip) + ":" + str(port))
     enc_msg = message_encode(MSG_PING, 0, (x, y), (0, 0))
     peer.sendto(enc_msg, (MCAST_GRP, MCAST_PORT))
     while window.update():
@@ -117,7 +126,6 @@ def main(argv):
                     window.writeln("No neighbors, echo will be aborted.")
                 else:
                     knownWaves.append((waves, (x, y)))
-                    window.writeln("Added " + str((waves, (x, y))) + " to list of known waves")
                     for n in nodes:
                         echo = message_encode(MSG_ECHO, waves, (x, y), (x, y))
                         peer.sendto(echo, n[0])
@@ -131,7 +139,6 @@ def main(argv):
                     window.writeln("No neighbors, size will be aborted.")
                 else:
                     knownWaves.append((waves, (x, y)))
-                    window.writeln("Added " + str((waves, (x, y))) + " to list of known waves")
                     for n in nodes:
                         echo = message_encode(MSG_ECHO, waves, (x, y), (x, y), OP_SIZE)
                         peer.sendto(echo, n[0])
@@ -140,14 +147,52 @@ def main(argv):
                     father.append('dummy')
                     recPayload.append(0)
                     types.append(OP_SIZE)
+            elif(line == "value"):
+                value = random.randrange(0, 10000)
+                window.writeln("New sensor value: " + str(value))
+            elif(line == "sum"):
+                if(nodes == []):
+                    window.writeln("No neighbors, sum will be aborted.")
+                else:
+                    #window.writeln("Calculating sum...")
+                    knownWaves.append((waves, (x, y)))
+                    for n in nodes:
+                        echo = message_encode(MSG_ECHO, waves, (x, y), (x, y), OP_SUM, value)
+                        peer.sendto(echo, n[0])
+                    waves += 1
+                    receivedEchoReps.append(0)
+                    father.append('dummy')
+                    recPayload.append(0)
+                    types.append(OP_SUM)
+            elif(line == "max"):
+                if(nodes == []):
+                    window.writeln("No neighbors, max will be aborted.")
+                else:
+                    knownWaves.append((waves, (x, y)))
+                    for n in nodes:
+                        echo = message_encode(MSG_ECHO, waves, (x, y), (x, y), OP_MAX, value)
+                        peer.sendto(echo, n[0])
+                    waves += 1
+                    receivedEchoReps.append(0)
+                    father.append('dummy')
+                    recPayload.append(0)
+                    types.append(OP_MAX)
+                    #window.writeln("testing...")
+            elif(line == "min"):
+                if(nodes == []):
+                    window.writeln("No neighbors, min will be aborted.")
+                else:
+                    knownWaves.append((waves, (x, y)))
+                    for n in nodes:
+                        echo = message_encode(MSG_ECHO, waves, (x, y), (x, y), OP_MIN, value)
+                        peer.sendto(echo, n[0])
+                    waves += 1
+                    receivedEchoReps.append(0)
+                    father.append('dummy')
+                    recPayload.append(0)
+                    types.append(OP_MIN)
             else:
                 window.writeln("This command is not supported")
-
-def send_mcast(socket, message):
-    socket.sendto(message, (MCAST_GRP, MCAST_PORT))
-
-def send_ucast(socket, message, address):
-    socket.sendto(message, address)
 
 def process_msg(message, address, mcastt, ucast):
     global x
@@ -159,6 +204,7 @@ def process_msg(message, address, mcastt, ucast):
     global father
     global recPayload
     global receivedEchoReps
+    global value
     dec_msg = message_decode(message)
     global window
     if(dec_msg[0] == MSG_PING):
@@ -178,6 +224,7 @@ def process_msg(message, address, mcastt, ucast):
         nodes.append((address, dec_msg[3]))
 
     elif(dec_msg[0] == MSG_ECHO):
+        #window.writeln("Received echo")
         if(dec_msg[1], dec_msg[2]) in knownWaves:
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
             rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
@@ -187,10 +234,14 @@ def process_msg(message, address, mcastt, ucast):
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
             father.append(address)
             recPayload.append(0)
+            receivedEchoReps.append(0)
             types.append(dec_msg[4])
             if(len(nodes) == 1):
                 if(dec_msg[4] == OP_SIZE):
                     rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y), OP_SIZE, 1)
+                elif(dec_msg[4] == OP_SUM or dec_msg[4] == OP_MIN or dec_msg[4] == OP_MAX):
+                    #window.writeln("Sending one of those new echo replys")
+                    rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y), dec_msg[4], value)
                 else:
                     rep = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
                 peer.sendto(rep,  address)
@@ -201,35 +252,74 @@ def process_msg(message, address, mcastt, ucast):
                     else:
                         if(dec_msg [4] == OP_SIZE):
                             echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y), OP_SIZE, 0)
+                        elif(dec_msg[4] == OP_SUM or dec_msg[4] == OP_MIN or dec_msg[4] == OP_MAX):
+                            #window.writeln("Sending new echo...")
+                            echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y), dec_msg[4], value)
+                            #window.writeln("Message encoded")
                         else:
                             echo = message_encode(MSG_ECHO, dec_msg[1], dec_msg[2], (x, y))
+                        #window.writeln("Really sending now...")
                         peer.sendto(echo, n[0])
-                receivedEchoReps.append(0)
+                        #window.writeln("Message to child sent")
 
     elif(dec_msg[0] == MSG_ECHO_REPLY):
         if not ((dec_msg[1], dec_msg[2])) in knownWaves:
             window.writeln("Something went wrong")
         else:
+            #window.writeln("Received echo reply with payload " + str(dec_msg[5]))
+            #window.writeln(str(dec_msg))
             index = knownWaves.index((dec_msg[1], dec_msg[2]))
+            #window.writeln("testing..")
             receivedEchoReps[index] += 1
-            if(not (types[index] == dec_msg[4])):
-                pass
-            elif(dec_msg[4] == OP_SIZE):
+            if(dec_msg[4] == OP_SIZE):
                 recPayload[index] += int(dec_msg[5])
+            elif(dec_msg[4] == OP_SUM):
+                recPayload[index] += int(dec_msg[5])
+                #window.writeln("Received new echo (sum)")
+            elif(dec_msg[4] == OP_MAX):
+                recPayload[index] = max(recPayload[index], int(dec_msg[5]))
+                #window.writeln("rec max")
+            elif(dec_msg[4] == OP_MIN):
+                if(dec_msg[5] == 0):
+                    pass
+                if(recPayload[index] == 0):
+                    recPayload[index] = dec_msg[5]
+                recPayload[index] = min(recPayload[index], dec_msg[5])
+                #window.writeln("rec min rep")
+            #window.writeln("test")
             if(receivedEchoReps[index] == len(nodes) - 1):
                 if(knownWaves[index][1] == (x, y)):
                     pass
                 else:
+                    #window.writeln("Answer from all!")
                     if(types[index] == OP_SIZE):
-                        msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], \
-                                (x, y), OP_SIZE, recPayload[index] + 1)
-                    else:
-                        msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y))
+                        recPayload[index] += 1
+                    elif(types[index] == OP_SUM):
+                        #window.writeln("Sending sum to father")
+                        recPayload[index] += value
+                    elif(types[index] == OP_MIN):
+                        if(recPayload[index] == 0):
+                            recPayload[index] = value
+                        recPayload[index] = min(recPayload[index], value)
+                    elif(types[index] == OP_MAX):
+                        recPayload[index] = max(recPayload[index], value)
+                    msg = message_encode(MSG_ECHO_REPLY, dec_msg[1], dec_msg[2], (x, y), types[index], recPayload[index])
+                    #window.writeln("Sending echo reply to father")
                     peer.sendto(msg, father[index])
+                    #window.writeln("Echo reply sent.")
             elif(receivedEchoReps[index] == len(nodes) and knownWaves[index][1] == (x, y)):
                 window.writeln("Echo finished.")
-                if(dec_msg[4] == OP_SIZE):
+                #window.writeln(str(dec_msg))
+                if(types[index] == OP_SIZE):
                    window.writeln("Total size of the network: " + str(recPayload[index] + 1))
+                if(types[index] == OP_SUM):
+                    window.writeln("Sum of the sensor values: " + str(recPayload[index] + value))
+                if(types[index] == OP_MAX):
+                    window.writeln("Maximum sensor value: " + str(max(recPayload[index], value)))
+                if(types[index] == OP_MIN):
+                    window.writeln("Minimum sensor value: " + str(min(recPayload[index], value)))
+                #window.writeln("Now really.")
+
 
 
 
